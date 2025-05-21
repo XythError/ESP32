@@ -23,7 +23,8 @@
 ## 📂 Projektstruktur
 
 ```text
-├── /docs           # Schaltpläne, Fotos, Verdrahtungsgrafiken
+├── /docs               # Project Pitch
+│   ├── images          # Schaltpläne, Fotos, Verdrahtungsgrafiken
 ├── /firmware
 │   ├── Basisstation/       # ESP32-Code für die Sensorstation
 │   └── Nodes/       # ESP32-Code für die Basisstation
