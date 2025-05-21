@@ -129,7 +129,6 @@ Passe `config.h` an:
 
 - **Issues**: Stelle Fragen oder schlage Ideen vor.
 - **Pull Requests**: Kleine, klare Änderungen sind willkommen!
-- Nutze die [README-Vorlage](https://github.com/othneildrew/Best-README-Template) für Inspiration.
 
 ---
 
