@@ -1,5 +1,4 @@
 
-```markdown
 # 🐝 BeeHiveSensor – Smarte Bienenstocküberwachung
 
 **BeeHiveSensor** ist ein Open-Source-DIY-System zur Überwachung von Bienenstöcken. Es misst Gewicht, Temperatur, Luftfeuchtigkeit und Luftdruck und überträgt die Daten per LoRa bis zu 10 km an eine Basisstation mit Display. Mit einem ESP32, Wägezellen, einem BME280-Sensor und Solarbetrieb ist es energieautark und ideal für Imker, die Nektareintrag, Schwarmaktivität oder Futterverbrauch in Echtzeit verfolgen möchten – ohne ständige Fahrten zum Bienenstand.
