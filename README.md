@@ -1,160 +1,150 @@
-# ESP32
-Developing ESP32 including devices for edjucational purpose
 
-# ESP32-S3 Sensorstation mit Display‑Menü, SD‑Logging & Webserver
+# 🐝 BeeHiveSensor – Smarte Bienenstocküberwachung
 
-Dieses Projekt richtet sich an alle Bastler, die eine kompakte IoT‑Sensorstation mit ESP32‑S3 realisieren möchten. Es verbindet:
+**BeeHiveSensor** ist ein Open-Source-DIY-System zur Überwachung von Bienenstöcken. Es misst Gewicht, Temperatur, Luftfeuchtigkeit und Luftdruck und überträgt die Daten per LoRa bis zu 10 km an eine Basisstation mit Display. Mit einem ESP32, Wägezellen, einem BME280-Sensor und Solarbetrieb ist es energieautark und ideal für Imker, die Nektareintrag, Schwarmaktivität oder Futterverbrauch in Echtzeit verfolgen möchten – ohne ständige Fahrten zum Bienenstand.
 
-* **OLED‑Display (SSD1306)** mit Menüführung und Statusanzeige
-* **DHT11‑Temperatur‑ und Luftfeuchtesensor**
-* **DS1307‑RTC** (Echtzeituhr) auf separatem Hardware‑I²C
-* **SD‑Kartenlogging** der Sensordaten im CSV‑Format
-* **Webserver im AP‑Modus** mit Dateiserver und JSON‑API
-* **RGB‑LED** für Statusfeedback
-* **4 Taster** zur Bedienung (Up, Down, OK, Back)
+<p align="center">
+  <img src="docs/images/beehivesensor_setup.png" alt="BeeHiveSensor Setup" width="400"/>
+</p>
 
 ---
 
-## Inhaltsverzeichnis
+## 🌟 Highlights
 
-1. [Features](#features)
-2. [Hardware](#hardware)
-3. [Schaltplan & Pinbelegung](#schaltplan--pinbelegung)
-4. [Software‑Setup](#software‑setup)
-5. [Installation](#installation)
-6. [Menü‑Navigation & Bedienung](#menü‑navigation--bedienung)
-7. [Web‑Schnittstelle](#web‑schnittstelle)
-8. [CSV‑Logging auf SD](#csv‑logging-auf-sd)
-9. [Anpassung & Erweiterung](#anpassung--erweiterung)
-10. [Fehlerbehebung](#fehlerbehebung)
-11. [Lizenz](#lizenz)
+- **Präzise Messungen**: Gewicht (4x Wägezellen mit HX711), Temperatur, Luftfeuchtigkeit, Luftdruck (BME280).
+- **LoRa-Funk**: Bis zu 10 km Reichweite mit 868 MHz (RFM95W).
+- **Energieautark**: 5 W Solarpanel mit TP4056-Laderegler und 18650-Akku.
+- **Tiefschlaf-Modus**: ESP32 verbraucht <20 µA im Sleep-Modus.
+- **Einfache Firmware**: Arduino- oder PlatformIO-kompatibel, Open-Source-Bibliotheken.
+- **Intuitives Dashboard**: 4,3″ TFT-Display zeigt Daten von bis zu 9 Bienenstöcken live an.
 
 ---
 
-## Features
-
-* **Startbildschirm**: Anzeige von WLAN‑SSID, IP, Uhrzeit, Temperatur/Luftfeuchte, SD‑Status
-* **Hauptmenü** mit vier Einträgen:
-
-  1. WiFi Scan (Suche nach Netzwerken)
-  2. File Server (AP‑Modus & HTTP‑Dateiserver)
-  3. Sensors (Großanzeige der aktuellen Messwerte)
-  4. Reboot (Neustart des ESP)
-  5. Home (Zurück zum Startbildschirm)
-* **Webserver im Access‑Point‑Modus**:
-
-  * `/` → HTML‑Übersichtsseite
-  * `/logs` → Liste der auf SD gespeicherten CSV‑Dateien
-  * `/data.json` → Aktuelle Messwerte als JSON
-* **Automatisches SD‑Logging** im CSV‑Format (stündlich, konfigurierbar)
-* **Programmierung in Arduino-IDE** (C++) mit modularen Setup‑Funktionen
-* **Status‑RGB‑LED** (grün: Webserver aktiv, blau: WLAN, gelb/orange: Fehler)
-
-## Hardware
-
-* **ESP32‑S3 Dev Module**
-* **SSD1306 OLED** 128×64 (I²C, Software‑I²C auf GPIO 20/21)
-* **DS1307 RTC** (Hardware‑I²C auf GPIO 15/16)
-* **DHT11** Temperatursensor (Daten auf GPIO 39)
-* **SD‑Card‑Module** (SPI: CS=GPIO 10, MOSI=13, MISO=11, SCK=12)
-* **RGB‑LED** (Common Cathode/Anode, GPIO 1/2/37)
-* **4 Pushbuttons** (Up 36, Down 35, OK 48, Back 47)
-
-## Schaltplan & Pinbelegung
-
-| Funktion       | Modul/Pin   | ESP32‑S3 GPIO |
-| -------------- | ----------- | ------------- |
-| **OLED SDA**   | SSD1306 SDA | 20            |
-| **OLED SCL**   | SSD1306 SCL | 21            |
-| **RTC SDA**    | DS1307 SDA  | 15            |
-| **RTC SCL**    | DS1307 SCL  | 16            |
-| **DHT11 Data** | DHT11 DATA  | 39            |
-| **SD CS**      | SD CS       | 10            |
-| **SD MOSI**    | SD MOSI     | 13            |
-| **SD MISO**    | SD MISO     | 11            |
-| **SD SCK**     | SD SCK      | 12            |
-| **RGB Red**    | LED R       | 1             |
-| **RGB Green**  | LED G       | 2             |
-| **RGB Blue**   | LED B       | 37            |
-| **BTN Up**     | Taster Up   | 36            |
-| **BTN Down**   | Taster Down | 35            |
-| **BTN OK**     | Taster OK   | 48            |
-| **BTN Back**   | Taster Back | 47            |
-
-> **Hinweis:** Pin 1 (UART0 TX) kann mit Serial kollidieren. Alternativ eigene PWM-fähige Pins wählen.
-
-## Software‑Setup
-
-1. Arduino IDE installieren (Version ≥1.8.13).
-2. ESP32‑S3 Board‑Definition hinzufügen:
-
-   * URL: `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
-   * Bord „ESP32S3 Dev Module“ auswählen.
-3. Bibliotheken installieren (über Library‑Manager):
-
-   * `U8g2`
-   * `Adafruit RTClib`
-   * `DHT sensor library` + `Adafruit Unified Sensor`
-   * `ESP32 SD library`
-   * `WebServer`
-
-## Installation
-
-1. Pin‑Macros oben im Sketch an deine Verdrahtung anpassen.
-2. In Arduino IDE unter **Tools → Board → ESP32S3 Dev Module** auswählen.
-3. **Upload**. Öffne den Seriellen Monitor (115200 Baud) für Debug‑Ausgaben.
-
-## Menü‑Navigation & Bedienung
-
-* **K0 (Up) / K1 (Down):** Durch Menüs scrollen
-* **K2 (OK):** Auswahl bestätigen
-* **K3 (Back):** Zurück / Home
-
-### Menüstruktur
+## 📂 Projektstruktur
 
 ```text
-HOME → [K2]
-  MENU:
-    0. WiFi Scan     → Scan starten, Ergebnisse anzeigen
-    1. File Server   → AP + HTTP-Server an/aus
-    2. Sensors       → Messwerte groß anzeigen
-    3. Reboot        → ESP neu starten
-    4. Home          → Zurück zum Startbildschirm
+├── /docs           # Schaltpläne, Fotos, Verdrahtungsgrafiken
+├── /firmware
+│   ├── node/       # ESP32-Code für die Sensorstation
+│   └── base/       # ESP32-Code für die Basisstation
+├── /hardware       # KiCad-PCB, 3D-Druck-STLs, Stückliste
+├── LICENSE         # MIT-Lizenz
+├── README.md       # Diese Datei
+└── CHANGELOG.md    # Änderungsprotokoll
 ```
-
-## Web‑Schnittstelle
-
-Wenn der File Server aktiv ist, verbindet sich dein PC/Smartphone mit dem WLAN „ESP32‑S3‑AP“ (Passwort `password123`) und ruft im Browser:
-
-* `http://192.168.4.1/` → HTML‑Dashboard
-* `http://192.168.4.1/logs` → Linkliste der CSV‑Logs
-* `http://192.168.4.1/data.json` → Aktuelle Messwerte als JSON
-
-## CSV‑Logging auf SD
-
-* Tägliche Dateien: `log_YYYYMMDD.csv`
-* Intervall konfigurierbar (`SENSOR_LOG_INTERVAL_MINUTES`) in Minuten
-* Jede Datei enthält Header: `Timestamp,Temperature,Humidity`
-
-## Anpassung & Erweiterung
-
-* **Intervall ändern:** `#define SENSOR_LOG_INTERVAL_MINUTES 60`
-* **Menüpunkte erweitern:** `mainMenuItems[]` und `performAction()` anpassen
-* **OTA‑Update:** ArduinoOTA integrieren
-* **Grafische Web‑Dashboards:** Chart.js + AJAX in HTML einbinden
-
-## Fehlerbehebung
-
-* **RTC-Fehler:** Prüfe SDA/SCL, Batterie für DS1307
-* **DHT-Fehler:** Sensor resetten, `delay(2000)` vor dem ersten `read()`
-* **Display flackert:** I²C‑Bus-Konflikt vermeiden, evtl. auf HW‑I²C umstellen
-* **SD-Karte nicht mountbar:** 3.3 V‑Level, richtige CS‑Pin‑Belegung
-* **WebServer 404:** Routen in `startFileServer()` und `setup()` korrekt registrieren
-
-## Lizenz
-
-Dieses Projekt steht unter der **MIT License**.
 
 ---
 
-*Viel Spaß beim Basteln und Anpassen!*
+## ⚙️ Hardware
+
+| Komponente                          | Funktion                           | Ressourcen |
+|-------------------------------------|------------------------------------|------------|
+| **ESP32 DevKit v1**                | Mikrocontroller mit WLAN, BT, Tiefschlaf | [PlatformIO Docs](https://docs.platformio.org/en/latest/platforms/espressif32.html) |
+| **RFM95W (SX1276)**                | 868 MHz LoRa-Funk, bis 10 km Reichweite | [Adafruit RFM95W](https://www.adafruit.com/product/3072) |
+| **HX711 + 4× 50 kg Wägezellen**    | Gewichtsmessung in 24-Bit-Genauigkeit | [Random Nerd Tutorials](https://randomnerdtutorials.com/esp32-load-cell-hx711/) |
+| **BME280**                         | Temperatur (±1 °C), Luftfeuchtigkeit (±3 %), Druck (±1 hPa) | [Adafruit BME280](https://learn.adafruit.com/adafruit-bme280-humidity-barometric-pressure-temperature-sensor-breakout/overview) |
+| **5 W Solarpanel + TP4056 + 18650**| Autarke Stromversorgung | [TP4056 Specs](https://www.amazon.com/Makerfocus-Charging-Lithium-Battery-Protection/dp/B071RG4YWM) |
+| **4,3″ TFT-LCD + TFT_eSPI**        | Basisstation-Display | [TFT_eSPI Library](https://github.com/Bodmer/TFT_eSPI) |
+
+👉 Detaillierte Stückliste, Schaltpläne und Gerber-Dateien in `/hardware`.
+
+---
+
+## 💡 Funktionen
+
+| **Sensorstation (Node)** | **Basisstation** |
+|--------------------------|------------------|
+| 📏 Gewichtsmessung (10 Samples, Temperaturdrift-kompensiert) | 📊 Live-Anzeige für bis zu 9 Bienenstöcke |
+| 🌡️ BME280-Daten (Temperatur, Luftfeuchtigkeit, Druck) | 📡 LoRa-Empfang mit CRC-Fehlerprüfung |
+| 📡 LoRa-Datenübertragung alle 5 Minuten | 💾 Optionaler CSV-Datenlog auf SD-Karte |
+| 😴 Tiefschlaf zwischen Messungen (<20 µA) | 🔔 Warnung bei niedrigem Akkustand |
+
+---
+
+## 🚀 Schnellstart
+
+### 1. Repository klonen
+```bash
+git clone https://github.com/XythError/BeeHiveSensor.git
+cd BeeHiveSensor/firmware/node
+```
+
+### 2. Entwicklungsumgebung einrichten
+- **Arduino IDE**: Wähle „ESP32 Dev Module“.
+- **PlatformIO**: Öffne das Projekt, `platformio.ini` wird automatisch erkannt ([PlatformIO Docs](https://docs.platformio.org)).
+
+### 3. Bibliotheken installieren
+```bash
+# HX711: https://github.com/bogde/HX711
+# BME280: Adafruit_BME280
+# LoRa: https://github.com/sandeepmistry/arduino-LoRa
+# TFT_eSPI (nur Basis): https://github.com/Bodmer/TFT_eSPI
+```
+
+### 4. Konfiguration anpassen
+Passe `config.h` an:
+```cpp
+#define NODE_ID          1         // Eindeutige ID pro Sensorstation
+#define CAL_FACTOR       2143.0f   // Kalibrierfaktor (nach Kalibrierung)
+#define TX_INTERVAL_MS   300000    // Sendeintervall (5 Minuten)
+```
+
+### 5. Flashen & Testen
+- **Sensorstation**: Flashe `node/` und überprüfe Gewichtswerte im seriellen Monitor.
+- **Basisstation**: Flashe `base/` und prüfe den LoRa-Empfang.
+- **Feldaufbau**:
+  - Montiere Wägezellen unter dem Bienenstock, HX711 in der Nähe.
+  - Richte die Antenne nach außen, Solarpanel nach Süden aus.
+  - Führe einen 24-Stunden-Testlauf durch und dokumentiere in `CHANGELOG.md`.
+
+---
+
+## 🛠️ Kalibrierung
+
+1. Stelle den leeren Bienenstock auf die Wägezellen und führe `scale.tare()` aus.
+2. Lege ein bekanntes Gewicht (z. B. 10 kg) auf und berechne den Kalibrierfaktor:  
+   `Kalibrierfaktor = Rohwert / Gewicht (kg)`.
+3. Trage den Faktor in `config.h` ein.  
+   Details: [Random Nerd Tutorials](https://randomnerdtutorials.com/esp32-load-cell-hx711/).
+
+---
+
+## 📈 Roadmap
+
+| Meilenstein                       | Status |
+|-----------------------------------|--------|
+| Gewicht & BME280-Messung          | ✅ Done |
+| LoRa-Datenübertragung             | ✅ Done |
+| Tiefschlaf <100 µA                | ⏳ In Arbeit |
+| TFT-Dashboard                     | ⏳ In Arbeit |
+| 48-Stunden-Solartest im Feld      | ⏳ In Arbeit |
+
+👉 Aktuelle Aufgaben im [GitHub Projects Board](https://github.com/<user>/BeeHiveSensor/projects).
+
+---
+
+## 🤝 Mitmachen
+
+- **Issues**: Stelle Fragen oder schlage Ideen vor.
+- **Pull Requests**: Kleine, klare Änderungen sind willkommen!
+- Nutze die [README-Vorlage](https://github.com/othneildrew/Best-README-Template) für Inspiration.
+
+---
+
+## 📜 Lizenz
+
+[MIT-Lizenz](LICENSE) – Nutze das Projekt frei, aber verlinke dieses Repository.
+
+---
+
+## 🙏 Credits
+
+- **HX711 Library**: Bogdan Necula ([GitHub](https://github.com/bogde/HX711))
+- **LoRa Library**: Sandeep Mistry ([GitHub](https://github.com/sandeepmistry/arduino-LoRa))
+- **Inspiration**: [Hiveeyes Community](https://community.hiveeyes.org/t/new-esp32-based-pcb-with-lora-support-from-christophe/2778)
+
+---
+
+**Viel Spaß beim Imkern und Bauen!** 🐝
+
+```
