@@ -115,8 +115,8 @@ Passe `config.h` an:
 
 | Meilenstein                       | Status |
 |-----------------------------------|--------|
-| Gewicht & BME280-Messung          | ⏳ In Arbeit |
-| LoRa-Datenübertragung             | ⏳ In Arbeit |
+| Gewicht & BME280-Messung          | DONE |
+| LoRa-Datenübertragung             | DONE |
 | Tiefschlaf <100 µA                | ⏳ In Arbeit |
 | TFT-Dashboard                     | ⏳ In Arbeit |
 | 48-Stunden-Solartest im Feld      | ⏳ In Arbeit |
